@@ -6,7 +6,7 @@ def read(filename):
 
 setup(
     name='asyncrawler', 
-    version='0.1',
+    version='0.2',
     packages=['asyncrawler'],
     package_dir={'asyncrawler':'.'}, # look for package contents in current directory
     author='Richard Penman',
