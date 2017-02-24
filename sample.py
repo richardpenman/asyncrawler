@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from urllib.parse import urljoin, urldefrag
-import asyncrawler, network, storage, writers, xpath
+import asyncrawler, network, storage, writers, scrape
 
 
-class TestCrawl:
+class TestCrawl(asyncrawler.BaseCrawler):
     def __init__(self):
         self.start = network.Transaction('http://webscraping.com/blog', callback=self.crawl)
         self.seen = storage.HashDict()
         self.writer = writers.CacheWriter('results.csv', ['URL', 'Title'])
 
     def crawl(self, transaction):
-        tree = xpath.Tree(transaction.body)
+        tree = scrape.Tree(transaction.body)
         title = tree.get('//title').tostring()
         self.writer.writerow([transaction.url, title])
         for link in tree.search('//a/@href'):

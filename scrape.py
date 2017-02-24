@@ -3,6 +3,7 @@ __doc__ = """
 
 import re
 import lxml.html
+from . import common
 
 
 class Tree:
@@ -18,6 +19,11 @@ class Tree:
                 self.doc = lxml.html.fromstring(e)
             except lxml.etree.LxmlError:
                 self.doc = None
+            except Exception as error:
+                print(error)
+                print(e)
+                print(type(e))
+                raise error
 
     def __eq__(self, html):
         return self.orig_html is html
@@ -30,19 +36,25 @@ class Tree:
         es = self.xpath(path)
         if es:
             return Tree(es[0])
-        return ''
+        return Tree(lxml.html.HtmlElement())
 
     def search(self, path):
         return [Tree(e) for e in self.xpath(path)]
 
-    def tostring(self):
+    def __str__(self):
         node = self.doc
-        try:
-            return ''.join(filter(None, 
-                [node.text] + [lxml.html.tostring(e) for e in node]
-            ))
-        except AttributeError as e:
+        if isinstance(node, str):
             return node
+        else:
+            # use a space separator to avoid text merging when remove tags
+            return common.normalize(' '.join(e for e in [node.text] + [str(Tree(child)) for child in node if isinstance(child, lxml.html.HtmlElement)] + [node.tail] if e))
+
+    def html(self):
+        node = self.doc
+        if isinstance(node, str):
+            return node
+        else:
+            return common.normalize(''.join(e for e in [node.text] + [lxml.html.tostring(e).decode() for e in node] if e))
 
 
 

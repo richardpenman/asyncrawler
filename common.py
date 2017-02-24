@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import sys, os, hashlib
+import sys, os, hashlib, re, html
 from datetime import datetime
+import unidecode
 DEBUG = '--debug' in sys.argv
 
 
@@ -24,6 +25,28 @@ def get_hidden_path(filename):
             hidden_dir = ''
     return os.path.join(hidden_dir, filename)
 
+
+def regex_get(content, pattern, flag=re.DOTALL|re.IGNORECASE, default=''):
+    """Helper method to extract content from regular expression
+
+    >>> regex_get('<div><span>Phone: 029&nbsp;01054609</span><span></span></div>', r'<span>Phone:([^<>]+)')
+    '029 01054609'
+    >>> regex_get('<div><span>Phone: 029&nbsp;01054609</span><span></span></div>', r'<span>Phone:\s*(\d+)&nbsp;(\d+)')
+    ['029', '01054609']
+    """
+    match = re.compile(pattern, flag).search(content)
+    if match:
+        result = match.groups()
+        return result[0] if len(result) == 1 else result
+    return default
+
+
+def normalize(s, default=''):
+    if s:
+        if not isinstance(s, str):
+            s = str(s)
+        return unidecode.unidecode(html.unescape(s)).strip()
+    return default
 
 
 class Logger:

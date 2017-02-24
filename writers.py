@@ -8,7 +8,7 @@ class CacheWriter:
         self.filename = filename
         self.header = header
         self.writer = None
-        self.mode = 'w' # default mode is write
+        self.mode = 'w' # default mode is write, which can be changed to append when continuing crawl
 
     def writerow(self, record):
         """Write result to CSV
@@ -26,5 +26,5 @@ class CacheWriter:
         self.writer.writerow(self.encode(row))
 
     def encode(self, row):
-        return row
+        return [None if e is None else str(e).strip() for e in row]
         #return [e.encode() for e in row]

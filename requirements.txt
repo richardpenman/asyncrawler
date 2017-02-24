@@ -4,12 +4,16 @@ aioodbc==0.0.3
 appdirs==1.4.0
 async-timeout==1.1.0
 cchardet==1.1.2
+chardet==2.3.0
 janus==0.2.4
 lxml==3.7.2
 multidict==2.1.4
 packaging==16.8
+pycares==2.1.1
+pyodbc==4.0.8
 pyparsing==2.1.10
 six==1.10.0
+Unidecode==0.4.20
 user-agent==0.1.6
 uvloop==0.8.0
 yarl==0.9.8

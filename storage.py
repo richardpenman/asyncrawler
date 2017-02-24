@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import collections, os, datetime, time, sqlite3, zlib, pickle
-import common
+from . import common
 
 
 

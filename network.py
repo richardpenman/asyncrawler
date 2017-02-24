@@ -2,7 +2,8 @@
 
 import traceback, collections, os, random
 from user_agent import generate_user_agent
-import common
+import yarl
+from . import common, scrape
 logger = common.logger
 
 
@@ -10,13 +11,17 @@ logger = common.logger
 async def fetch(session, transaction, proxy=None, user_agent='asyncrawler', timeout=60, encoding=None):
     """Asynchronously download the URL
     """
-    fn = session.get if transaction.data is None else session.post
+    request_fn = session.get if transaction.data is None else session.post
     headers = transaction.headers or {}
     headers['User-Agent'] = headers.get('User-Agent', user_agent)
     try:
-        async with fn(transaction.url, data=transaction.data, headers=headers, proxy=proxy, timeout=timeout) as response:
+        url = str(yarl.URL(transaction.url))
+        async with request_fn(url, data=transaction.data, headers=headers, proxy=proxy, timeout=timeout) as response:
             transaction.status = response.status
-            transaction.body = await response.text(encoding=encoding, errors='ignore')
+            content_type = response.headers.get('content-type')
+            response_fn = response.json if 'json' in content_type else (response.text if 'text' in content_type else response.read)
+            transaction.body = await response_fn(encoding=encoding, errors='ignore')
+            #print('Final URL: {}'.format(response.url_obj))
     except Exception as e:
         logger.error('Fetch error: {}: {}'.format(type(e), transaction.url))
         logger.error(traceback.print_exc())
@@ -27,7 +32,7 @@ async def fetch(session, transaction, proxy=None, user_agent='asyncrawler', time
 class Transaction:
     """Wrapper around a HTTP request and response
     """
-    def __init__(self, url, headers=None, data=None, status=0, body=None, callback=None):
+    def __init__(self, url, headers=None, data=None, status=0, body=None, callback=None, **kwargs):
         self.url = url
         self.headers = headers
         self.data = data
@@ -35,6 +40,8 @@ class Transaction:
         self.num_errors = 0
         self.body = body
         self.callback = callback
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     @property
     def callback(self):
@@ -45,11 +52,6 @@ class Transaction:
         if value is not None and not isinstance(value, str):
             value = value.__name__
         self._callback = value
-
-    #def __getstate__(self):
-    #    d = dict(self.__dict__)
-    #    #del d['callback'] # avoid pickling the callback
-    #    return d
 
     def __hash__(self):
         return common.hash('{} {} {}'.format(self.url, self.headers, self.data))
@@ -71,6 +73,16 @@ class Transaction:
     def is_error(self):
         return self.status >= 400
 
+    def merge(self, other):
+        """Merge attributes of this Transaction
+        """
+        for key, value in other.__dict__.items():
+            if value:
+                setattr(self, key, value)
+
+    def tree(self):
+        return scrape.Tree(self.body)
+
 
 
 class ProxyManager:
@@ -79,23 +91,32 @@ class ProxyManager:
         max_errors: the maximum number of consecutive download errors before a proxy is discarded
         """
         self.proxies = []
-        if proxy:
-            self.proxies.append(proxy)
-        if proxies:
-            self.proxies.extend(proxies)
+        self.add(proxy)
+        for proxy in proxies or []:
+            self.add(proxy)
         if proxy_file:
             if os.path.exists(proxy_file):
-                self.proxies.extend(open(proxy_file).read().splitlines())
+                for proxy in open(proxy_file).read().splitlines():
+                    self.add(proxy)
             else:
                 logger.warning('Proxy file "{}" does not exist'.format(proxy_file))
         self.errors = collections.defaultdict(int)
         self.max_errors = max_errors
         self.agents = {}
 
+
+    def add(self, proxy):
+        if proxy:
+            if not proxy.startswith('http'):
+                proxy = 'http://' + proxy
+            self.proxies.append(proxy)
+
+    
     def get(self, url):
         """Get proxy for this URL
         """
         # XXX add support to track errors by domain
+        # XXX add delay here for domain
         if self.proxies:
             return random.choice(self.proxies)
 
