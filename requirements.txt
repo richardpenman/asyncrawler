@@ -13,7 +13,6 @@ pycares==2.1.1
 pyodbc==4.0.8
 pyparsing==2.1.10
 six==1.10.0
-Unidecode==0.4.20
 user-agent==0.1.6
 uvloop==0.8.0
 yarl==0.9.8

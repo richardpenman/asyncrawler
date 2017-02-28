@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys, os, hashlib, re, html
+import sys, os, hashlib, re, html, unicodedata
 from datetime import datetime
-import unidecode
 DEBUG = '--debug' in sys.argv
 
 
@@ -45,7 +44,7 @@ def normalize(s, default=''):
     if s:
         if not isinstance(s, str):
             s = str(s)
-        return unidecode.unidecode(html.unescape(s)).strip()
+        return unicodedata.normalize('NFKD', html.unescape(s).strip())
     return default
 
 

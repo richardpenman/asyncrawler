@@ -25,10 +25,6 @@ class Tree:
                 print(type(e))
                 raise error
 
-    def __eq__(self, html):
-        return self.orig_html is html
-
-
     def xpath(self, path):
         return [] if self.doc is None else self.doc.xpath(path)
 
